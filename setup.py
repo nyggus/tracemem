@@ -9,7 +9,7 @@ extras_requirements = {
 
 setuptools.setup(
     name="memtrace",
-    version="0.1.0",
+    version="0.2.0",
     author="nyggus",
     author_email="nyggus@gmail.com",
     description="A lightweight tool to measure the full memory of a Python session",
