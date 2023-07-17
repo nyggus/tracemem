@@ -1,77 +1,256 @@
-# `memtrace`: A Python package for ...
+# `memtrace`: RAM memory tracker
 
+`memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
 
-# Installation - development
+`memtrace` is a very lightweight package for profiling memory use. It's a very simple wrapper around `pympler.asizeof.asizeof()`. `memtrace`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
 
-Create a virtual environment, for example using `venv`:
+* [`pympler`](https://pypi.org/project/Pympler/)
+* [`memory_profiler`](https://pypi.org/project/memory-profiler/)
+* [`perftester`](https://pypi.org/project/perftester/)
 
-```shell
-$ python -m venv venv-memtrace
-$ source venv-memtrace/bin/activate
-$ mkdir memtrace
-$ cd memtrace
-$ python -m pip install -e .[dev]
+and others.
+
+## Usage
+
+Since this is a profiling tool, `memtrace` code is typically *not* used by applications; instead, it's added only for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `memtrace `in any of the modules of your application; after this import, all `memtrace` functions and objects are available inside the Python session, hence, in any module of your application.
+
+Here's a list of all `memtrace` functions:
+
+* `MEMPOINT()`, which creates a memory point in your session (see below)
+* `MEMORY()`, which prints the memory usage, without creating a memory point
+* `MEMPRINT()`, which prints `MEMLOGS` (see below)
+* `MEMTRACE()`, a decorator function that creates a memory point before and after calling the decorated method
+
+In addition, `memtrace` offers one more object:
+
+* `MEMLOGS`, an object of a  `MemLogsList` class, a list-like container that keeps all memory points created during a session
+
+To use `memtrace`, you only need to import it:
+
+```python-repl
+>>> import memtrace
 
 ```
 
-Note that the last command installs a development environment, as it also installs packages needed for development, like `black` (for code formatting), `pytest` (for unit testing) and `wheel` (for creating wheel files from the package).
+### `MEMPOINT()`: Creating memory points
 
+The main function is `MEMPOINT()`, which creates a memory point — a point of the measurement of the memory used by a Python session — and adds it to `MEMLOGS`, a list-like container collecting memory points.
 
-# Testing
+> **A memory point**: A point of the measurement of the memory used by a Python session.
 
-Running the tests requires to run the following command in the root folder (of course in the virtual environment):
+The first memory point is when `memtrace` is imported. We can see this by checking the `MEMLOGS` object, which can be accessed from the `builtins` global space:
 
-```shell
-(venv-memtrace) > pytest
+```python-repl
+>>> MEMLOGS
+[MemLog(ID='memtrace import', memory=...)]
+>>> MEMPOINT()
+>>> len(MEMLOGS)
+2
+>>> MEMPOINT("The second MEMPOINT")
+>>> len(MEMLOGS)
+3
+>>> MEMLOGS
+[MemLog(ID='memtrace import', memory=...), MemLog(ID='None', memory=...), MemLog(ID='The second MEMPOINT', memory=...)]
+
 ```
 
-If you use doctests in your docstrings (as `makepackage` assumes), you can run them using the following command (in the root folder):
+(The measured memory usage is not included in the doctests, as they would fail.)
 
-```shell
-(venv-memtrace) > python -m doctest memtrace/memtrace.py
+A memory point creates a point with an ID, which by default is `None`; `MEMPOINT()` adds such a memory point `MEMLOGS`. When you create two points with the same ID, say "my id", the second time it will be replaced with "my id-2", and so on. Note that while you can use any object as an ID, its string representation will be used instead:
+
+```python-repl
+>>> MEMPOINT()
+>>> MEMLOGS[-1].ID
+'None-2'
+
 ```
 
-In a similar way, you can run doctests from any other file that contains doctests.
+In addition to IDs, memory points contain their essence: the memory used by the current session, in bytes. Let's see what happens when we add a big list to the scope and then remove it:
 
+```python-repl
+>>> li = [i for i in range(10_000_000)]
+>>> MEMPOINT("After adding a list with 10 mln elements")
+>>> del li
+>>> MEMPOINT("After removing this list")
+>>> MEMLOGS[-2].memory / MEMLOGS[-1].memory > 100
+True
 
-## Versioning
-
-Remember to update package version once a change is made to the package and the new version is pushed to the repository. Don't forget about releases, too.
-
-
-## How to build a Python package?
-
-To build the package, you need to go to the root folder of the package and run the following command:
-
-```shell
-(venv-memtrace) > python setup.py sdist bdist_wheel
 ```
 
-Note that this assumes you have `wheel` installed in your virtual environment, and `makepackage` does this for you.
+This basically means that adding so big a list to the scope makes the session use over a hundred times more memory.
 
-The built package is now located in the dist/ folder.
+### `MEMLOGS`: A container of memory points
 
+`MEMLOGS` is actually not a list but an object of a `memtrace.MemLogsList` class:
 
-## Publishing your package in PyPi
+```python-repl
+>>> type(MEMLOGS)
+<class 'memtrace.memtrace.MemLogsList'>
 
-If you want to publish it to [PyPi](https://pypi.org/), you need to install [twine](https://twine.readthedocs.io/en/latest/), create an account there, and run the following command (also in the package's root folder):
-
-```shell
-(venv-memtrace) > twine upload dist/*
 ```
 
-Nonetheless, if you first want to check what it will look like in PyPi, you can first upload the package to [a test version of PyPi](https://test.pypi.org/), that is, 
+This class inherits from `collections.UserList`, but it works in quite a different way than a regular list. First of all, it's a singleton class, so `MEMLOGS` is its only instance. The only method to update it is to use the `MEMPOINT()` function. You cannot append anything to it, and item assignment does not work for it, either; neither do multiplication and adding.
 
-```shell
-twine upload -r testpypi dist/*
+Note that `MEMLOGS` elements are instances of a `MemLog` named tuple (`collections.namedtuple`, to be precise). So, you can access its two items as if it were a regular tuple, or using the names of its two attributes, `ID` and `memory`:
+
+```python-repl
+>>> MEMPOINT("Just checking")
+>>> m = MEMLOGS[-1]
+>>> type(m)
+<class 'memtrace.memtrace.MemLog'>
+>>> m.ID
+'Just checking'
+>>> m[0]
+'Just checking'
+>>> type(m.memory)
+<class 'int'>
+>>> type(m[1])
+<class 'int'>
+
 ```
 
-Check if everything is fine, and if so, you're ready to publish the package to PyPi.
+See below for more advanced usage of `MEMLOGS`.
 
-## Installation from PyPi
+### `MEMPRINT()`: Printing `MEMLOGS`
 
-If the package is in PyPi, you can install it from there like any other Python package, that is,
+To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which converts memories to MB and pretty-prints the memory points collected in `MEMLOGS`:
 
-```shell
-pip install 
+```python-repl
+>>> MEMPRINT()
+ 0   ...    → memtrace import
+ 1   ...    → None
+ 2   ...    → The second MEMPOINT
+ 3   ...    → None-2
+ 4   ...    → After adding a list with 10 mln elements
+ 5   ...    → After removing this list
+ 6   ...    → Just checking
+
 ```
+
+## `@MEMTRACE`: Creating memory points by decorating a function
+
+If you want to log the full-memory usage of a particular function, you can use the `@MEMTRACE` decorator. It creates two memory points: right before and right after calling the function. Just like the other `memtrace` tools, you do not need to import the decorator:
+
+```python-repl
+>>> @MEMTRACE
+... def create_huge_list(n):
+...     return [i for i in range(n)]
+>>> li = create_huge_list(10_000_000)
+>>> del li
+>>> MEMPOINT()
+>>> MEMLOGS[-3:]
+[MemLog(ID='Before create_huge_list()', memory=...),
+ MemLog(ID='After create_huge_list()', memory=...),
+ MemLog(ID='None-3', memory=...)]
+>>> MEMLOGS[-2].memory > 100 * MEMLOGS[-1].memory
+True
+
+```
+
+## Additional `MEMLOGS` tools
+
+You can use several additional methods and properties of the `MEMLOGS` object:
+
+* `.memories`, a property that returns all the memories reported until the moment
+* `IDs`, like above but for IDs
+* `.filter()`, a method for filtering `MEMLOGS`
+* `.map()`, a method for applying a function to all elements of `MEMLOGS`
+
+Let's see how this works:
+
+```python-repl
+>>> type(MEMLOGS.memories), len(MEMLOGS.memories)
+(<class 'list'>, 10)
+>>> MEMLOGS.IDs
+['memtrace import',
+ 'None',
+ 'The second MEMPOINT',
+ 'None-2',
+ 'After adding a list with 10 mln elements',
+ 'After removing this list',
+ 'Just checking',
+ 'Before create_huge_list()',
+ 'After create_huge_list()', 'None-3']
+
+```
+
+The `.filter()` methods accepts one argument, that is, a predicate to be used for filtering, just like you'd use with the built-in `filter()` function. For the `.filter()` method, however, you need to create a predicate working with `MemLog` elements. Unlike the built-in `filter()` function, it does not create a generator but a list. This is because `MEMLOGS` is not expected to be a large object.
+
+```python-repl
+>>> def memory_over(memlog: memtrace.MemLog) -> bool:
+...     return memlog.memory > 3_750_000
+>>> MEMLOGS.filter(memory_over)
+[MemLog(ID='After adding a list with 10 mln elements', memory=...),
+ MemLog(ID='After create_huge_list()', memory=...)]
+
+```
+
+We can of course use a `lambda` function instead:
+
+```python-repl
+>>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
+[MemLog(ID='After adding a list with 10 mln elements', memory=...),
+ MemLog(ID='After create_huge_list()', memory=...)]
+>>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
+[]
+>>> MEMLOGS.filter(lambda m: "after" in m.ID.lower() or "before" in m.ID.lower())
+[MemLog(ID='After adding a list with 10 mln elements', memory=...),
+ MemLog(ID='After removing this list', memory=...),
+ MemLog(ID='Before create_huge_list()', memory=...),
+ MemLog(ID='After create_huge_list()', memory=...)]
+
+```
+
+And here's the `.map()` method in action. Like the `.filter()` method, it returns a list:
+
+```python-repl
+>>> as_MB = MEMLOGS.map(lambda m: m.memory / 1024 / 1024)
+>>> all(m < 500 for m in as_MB)
+True
+>>> MEMLOGS.map(lambda m: m.ID.lower())
+['memtrace import', 'none', 'the second mempoint', 'none-2', 'after adding a list with 10 mln elements', 'after removing this list', 'just checking', 'before create_huge_list()', 'after create_huge_list()', 'none-3']
+>>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
+>>> memlogs[:2]
+[('memtrace import', ...), ('none', ...)]
+
+```
+
+## `MEMORY()`: Printing current memory usage without creating a memory point
+
+Above, we've seen the most common use of `memtrace`'s full-memory tracer. There's one additional function, `MEMORY()`, which returns the current full memory of the session:
+
+```python-repl
+>>> mem = MEMORY()
+>>> type(mem)
+<class 'int'>
+
+```
+
+The function does not create a memory point, so it does not log the memory usage to `MEMLOGS`:
+
+```python-repl
+>>> len(MEMLOGS)
+10
+>>> _ = MEMORY()
+>>> len(MEMLOGS)
+10
+>>> MEMPOINT("Just once more")
+>>> len(MEMLOGS)
+11
+>>> _ = MEMORY()
+>>> len(MEMLOGS)
+11
+
+```
+
+## Why the `builtins` global scope?
+
+Since this feature of `memtrace` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
+
+## Operating systems
+
+The package is developed in Linux (actually, under WSL) and checked in Windows 10, so it works in both these environments.
+
+## Contribution
+
+Any contribution will be welcome. You can submit an issue in the [repository](https://github.com/nyggus/perftester). You can also create your own pull requests.
