@@ -1,4 +1,4 @@
-# `memtrace`: RAM memory tracker
+# `memtrace`: Memory tracker for Python sessions
 
 `memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
 
@@ -109,46 +109,6 @@ Note that `MEMLOGS` elements are instances of a `MemLog` named tuple (`collectio
 
 ```
 
-See below for more advanced usage of `MEMLOGS`.
-
-### `MEMPRINT()`: Printing `MEMLOGS`
-
-To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which converts memories to MB and pretty-prints the memory points collected in `MEMLOGS`:
-
-```python-repl
->>> MEMPRINT()
- 0   ...    → memtrace import
- 1   ...    → None
- 2   ...    → The second MEMPOINT
- 3   ...    → None-2
- 4   ...    → After adding a list with 10 mln elements
- 5   ...    → After removing this list
- 6   ...    → Just checking
-
-```
-
-## `@MEMTRACE`: Creating memory points by decorating a function
-
-If you want to log the full-memory usage of a particular function, you can use the `@MEMTRACE` decorator. It creates two memory points: right before and right after calling the function. Just like the other `memtrace` tools, you do not need to import the decorator:
-
-```python-repl
->>> @MEMTRACE
-... def create_huge_list(n):
-...     return [i for i in range(n)]
->>> li = create_huge_list(10_000_000)
->>> del li
->>> MEMPOINT()
->>> MEMLOGS[-3:]
-[MemLog(ID='Before create_huge_list()', memory=...),
- MemLog(ID='After create_huge_list()', memory=...),
- MemLog(ID='None-3', memory=...)]
->>> MEMLOGS[-2].memory > 100 * MEMLOGS[-1].memory
-True
-
-```
-
-## Additional `MEMLOGS` tools
-
 You can use several additional methods and properties of the `MEMLOGS` object:
 
 * `.memories`, a property that returns all the memories reported until the moment
@@ -212,6 +172,42 @@ True
 >>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
 >>> memlogs[:2]
 [('memtrace import', ...), ('none', ...)]
+
+```
+
+## `MEMPRINT()`: Printing `MEMLOGS`
+
+To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which converts memories to MB and pretty-prints the memory points collected in `MEMLOGS`:
+
+```python-repl
+>>> MEMPRINT()
+ 0   ...    → memtrace import
+ 1   ...    → None
+ 2   ...    → The second MEMPOINT
+ 3   ...    → None-2
+ 4   ...    → After adding a list with 10 mln elements
+ 5   ...    → After removing this list
+ 6   ...    → Just checking
+
+```
+
+## `@MEMTRACE`: Creating memory points by decorating a function
+
+If you want to log the full-memory usage of a particular function, you can use the `@MEMTRACE` decorator. It creates two memory points: right before and right after calling the function. Just like the other `memtrace` tools, you do not need to import the decorator:
+
+```python-repl
+>>> @MEMTRACE
+... def create_huge_list(n):
+...     return [i for i in range(n)]
+>>> li = create_huge_list(10_000_000)
+>>> del li
+>>> MEMPOINT()
+>>> MEMLOGS[-3:]
+[MemLog(ID='Before create_huge_list()', memory=...),
+ MemLog(ID='After create_huge_list()', memory=...),
+ MemLog(ID='None-3', memory=...)]
+>>> MEMLOGS[-2].memory > 100 * MEMLOGS[-1].memory
+True
 
 ```
 
