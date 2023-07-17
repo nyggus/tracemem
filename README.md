@@ -85,7 +85,7 @@ This basically means that adding so big a list to the scope makes the session us
 
 ```python-repl
 >>> type(MEMLOGS)
-<class 'memtrace.memtrace.MemLogsList'>
+<class 'memtrace.MemLogsList'>
 
 ```
 
@@ -97,7 +97,7 @@ Note that `MEMLOGS` elements are instances of a `MemLog` named tuple (`collectio
 >>> MEMPOINT("Just checking")
 >>> m = MEMLOGS[-1]
 >>> type(m)
-<class 'memtrace.memtrace.MemLog'>
+<class 'memtrace.MemLog'>
 >>> m.ID
 'Just checking'
 >>> m[0]
