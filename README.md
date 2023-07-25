@@ -50,7 +50,9 @@ The first memory point is when `memtrace` is imported. We can see this by checki
 >>> len(MEMLOGS)
 3
 >>> MEMLOGS
-[MemLog(ID='memtrace import', memory=...), MemLog(ID='None', memory=...), MemLog(ID='The second MEMPOINT', memory=...)]
+[MemLog(ID='memtrace import', memory=...),
+ MemLog(ID='None', memory=...),
+ MemLog(ID='The second MEMPOINT', memory=...)]
 
 ```
 
@@ -120,7 +122,7 @@ Let's see how this works:
 
 ```python-repl
 >>> type(MEMLOGS.memories), len(MEMLOGS.memories)
-(<class 'list'>, 10)
+(<class 'list'>, 7)
 >>> MEMLOGS.IDs
 ['memtrace import',
  'None',
@@ -128,9 +130,7 @@ Let's see how this works:
  'None-2',
  'After adding a list with 10 mln elements',
  'After removing this list',
- 'Just checking',
- 'Before create_huge_list()',
- 'After create_huge_list()', 'None-3']
+ 'Just checking']
 
 ```
 
@@ -140,8 +140,7 @@ The `.filter()` methods accepts one argument, that is, a predicate to be used fo
 >>> def memory_over(memlog: memtrace.MemLog) -> bool:
 ...     return memlog.memory > 3_750_000
 >>> MEMLOGS.filter(memory_over)
-[MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
+[MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 
 ```
 
@@ -149,15 +148,12 @@ We can of course use a `lambda` function instead:
 
 ```python-repl
 >>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
-[MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
+[MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 >>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
 []
 >>> MEMLOGS.filter(lambda m: "after" in m.ID.lower() or "before" in m.ID.lower())
 [MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After removing this list', memory=...),
- MemLog(ID='Before create_huge_list()', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
+ MemLog(ID='After removing this list', memory=...)]
 
 ```
 
@@ -168,7 +164,13 @@ And here's the `.map()` method in action. Like the `.filter()` method, it return
 >>> all(m < 500 for m in as_MB)
 True
 >>> MEMLOGS.map(lambda m: m.ID.lower())
-['memtrace import', 'none', 'the second mempoint', 'none-2', 'after adding a list with 10 mln elements', 'after removing this list', 'just checking', 'before create_huge_list()', 'after create_huge_list()', 'none-3']
+['memtrace import',
+ 'none',
+ 'the second mempoint',
+ 'none-2',
+ 'after adding a list with 10 mln elements',
+ 'after removing this list',
+ 'just checking']
 >>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
 >>> memlogs[:2]
 [('memtrace import', ...), ('none', ...)]
@@ -245,10 +247,17 @@ Since this feature of `memtrace` is to be used to debug memory use from various 
 
 ## Unit testing
 
-The package is covered with documentation tests and unit tests, located in this README and in the main module, [memtrace.py](memtrace.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only one command. A Windows command would be the same, actually, so you can simply copy it
+The package is covered with documentation tests and unit tests, located in this README and in the main module, [memtrace.py](memtrace.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only two commands:
 
-For the moment, the `doctest` testing is enough, but if a need arises to implement `pytest`, we will.
+```bash
+(venv-memtrace) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
+(venv-memtrace) $ python memtrace.py
 
+```
+
+Remember to run the script or these two commands in the virtual environment, here called `venv-memtrace`. In Windows, the commands would be exactly the same, so you can simply copy theme and paste into your shell.
+
+For the moment, `doctest` is the only testing framework used in `memtrace`, but if it occurrs to be insufficient, `pytest`would be implemented.
 
 ## Operating systems
 
