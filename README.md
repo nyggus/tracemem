@@ -34,9 +34,9 @@ To use `memtrace`, you only need to import it:
 
 ### `MEMPOINT()`: Creating memory points
 
-The main function is `MEMPOINT()`, which creates a memory point — a point of the measurement of the memory used by a Python session — and adds it to `MEMLOGS`, a list-like container collecting memory points.
+The main function is `MEMPOINT()`, which creates a memory point — a measurement point of the memory used by a Python session — and adds it to `MEMLOGS`, a list-like container of memory points.
 
-> **A memory point**: A point of the measurement of the memory used by a Python session.
+> **A memory point**: A measurement point of the memory used by a Python session.
 
 The first memory point is when `memtrace` is imported. We can see this by checking the `MEMLOGS` object, which can be accessed from the `builtins` global space:
 
@@ -242,6 +242,13 @@ The function does not create a memory point, so it does not log the memory usage
 ## Why the `builtins` global scope?
 
 Since this feature of `memtrace` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
+
+## Unit testing
+
+The package is covered with documentation tests and unit tests, located in this README and in the main module, [memtrace.py](memtrace.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only one command. A Windows command would be the same, actually, so you can simply copy it
+
+For the moment, the `doctest` testing is enough, but if a need arises to implement `pytest`, we will.
+
 
 ## Operating systems
 
