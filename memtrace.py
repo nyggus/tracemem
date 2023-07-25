@@ -1,3 +1,4 @@
+"""memtrace: Trace and measure the memory a Python session takes."""
 import builtins
 import inspect
 import gc
