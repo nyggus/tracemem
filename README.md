@@ -1,4 +1,4 @@
-# `memtrace`: RAM memory tracker
+# `memtrace`: Memory tracker for Python sessions
 
 `memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
 
@@ -34,9 +34,9 @@ To use `memtrace`, you only need to import it:
 
 ### `MEMPOINT()`: Creating memory points
 
-The main function is `MEMPOINT()`, which creates a memory point — a point of the measurement of the memory used by a Python session — and adds it to `MEMLOGS`, a list-like container collecting memory points.
+The main function is `MEMPOINT()`, which creates a memory point — a measurement point of the memory used by a Python session — and adds it to `MEMLOGS`, a list-like container of memory points.
 
-> **A memory point**: A point of the measurement of the memory used by a Python session.
+> **A memory point**: A measurement point of the memory used by a Python session.
 
 The first memory point is when `memtrace` is imported. We can see this by checking the `MEMLOGS` object, which can be accessed from the `builtins` global space:
 
@@ -50,7 +50,9 @@ The first memory point is when `memtrace` is imported. We can see this by checki
 >>> len(MEMLOGS)
 3
 >>> MEMLOGS
-[MemLog(ID='memtrace import', memory=...), MemLog(ID='None', memory=...), MemLog(ID='The second MEMPOINT', memory=...)]
+[MemLog(ID='memtrace import', memory=...),
+ MemLog(ID='None', memory=...),
+ MemLog(ID='The second MEMPOINT', memory=...)]
 
 ```
 
@@ -109,9 +111,73 @@ Note that `MEMLOGS` elements are instances of a `MemLog` named tuple (`collectio
 
 ```
 
-See below for more advanced usage of `MEMLOGS`.
+You can use several additional methods and properties of the `MEMLOGS` object:
 
-### `MEMPRINT()`: Printing `MEMLOGS`
+* `.memories`, a property that returns all the memories reported until the moment
+* `IDs`, like above but for IDs
+* `.filter()`, a method for filtering `MEMLOGS`
+* `.map()`, a method for applying a function to all elements of `MEMLOGS`
+
+Let's see how this works:
+
+```python-repl
+>>> type(MEMLOGS.memories), len(MEMLOGS.memories)
+(<class 'list'>, 7)
+>>> MEMLOGS.IDs
+['memtrace import',
+ 'None',
+ 'The second MEMPOINT',
+ 'None-2',
+ 'After adding a list with 10 mln elements',
+ 'After removing this list',
+ 'Just checking']
+
+```
+
+The `.filter()` methods accepts one argument, that is, a predicate to be used for filtering, just like you'd use with the built-in `filter()` function. For the `.filter()` method, however, you need to create a predicate working with `MemLog` elements. Unlike the built-in `filter()` function, it does not create a generator but a list. This is because `MEMLOGS` is not expected to be a large object.
+
+```python-repl
+>>> def memory_over(memlog: memtrace.MemLog) -> bool:
+...     return memlog.memory > 3_750_000
+>>> MEMLOGS.filter(memory_over)
+[MemLog(ID='After adding a list with 10 mln elements', memory=...)]
+
+```
+
+We can of course use a `lambda` function instead:
+
+```python-repl
+>>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
+[MemLog(ID='After adding a list with 10 mln elements', memory=...)]
+>>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
+[]
+>>> MEMLOGS.filter(lambda m: "after" in m.ID.lower() or "before" in m.ID.lower())
+[MemLog(ID='After adding a list with 10 mln elements', memory=...),
+ MemLog(ID='After removing this list', memory=...)]
+
+```
+
+And here's the `.map()` method in action. Like the `.filter()` method, it returns a list:
+
+```python-repl
+>>> as_MB = MEMLOGS.map(lambda m: m.memory / 1024 / 1024)
+>>> all(m < 500 for m in as_MB)
+True
+>>> MEMLOGS.map(lambda m: m.ID.lower())
+['memtrace import',
+ 'none',
+ 'the second mempoint',
+ 'none-2',
+ 'after adding a list with 10 mln elements',
+ 'after removing this list',
+ 'just checking']
+>>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
+>>> memlogs[:2]
+[('memtrace import', ...), ('none', ...)]
+
+```
+
+## `MEMPRINT()`: Printing `MEMLOGS`
 
 To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which converts memories to MB and pretty-prints the memory points collected in `MEMLOGS`:
 
@@ -147,74 +213,6 @@ True
 
 ```
 
-## Additional `MEMLOGS` tools
-
-You can use several additional methods and properties of the `MEMLOGS` object:
-
-* `.memories`, a property that returns all the memories reported until the moment
-* `IDs`, like above but for IDs
-* `.filter()`, a method for filtering `MEMLOGS`
-* `.map()`, a method for applying a function to all elements of `MEMLOGS`
-
-Let's see how this works:
-
-```python-repl
->>> type(MEMLOGS.memories), len(MEMLOGS.memories)
-(<class 'list'>, 10)
->>> MEMLOGS.IDs
-['memtrace import',
- 'None',
- 'The second MEMPOINT',
- 'None-2',
- 'After adding a list with 10 mln elements',
- 'After removing this list',
- 'Just checking',
- 'Before create_huge_list()',
- 'After create_huge_list()', 'None-3']
-
-```
-
-The `.filter()` methods accepts one argument, that is, a predicate to be used for filtering, just like you'd use with the built-in `filter()` function. For the `.filter()` method, however, you need to create a predicate working with `MemLog` elements. Unlike the built-in `filter()` function, it does not create a generator but a list. This is because `MEMLOGS` is not expected to be a large object.
-
-```python-repl
->>> def memory_over(memlog: memtrace.MemLog) -> bool:
-...     return memlog.memory > 3_750_000
->>> MEMLOGS.filter(memory_over)
-[MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
-
-```
-
-We can of course use a `lambda` function instead:
-
-```python-repl
->>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
-[MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
->>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
-[]
->>> MEMLOGS.filter(lambda m: "after" in m.ID.lower() or "before" in m.ID.lower())
-[MemLog(ID='After adding a list with 10 mln elements', memory=...),
- MemLog(ID='After removing this list', memory=...),
- MemLog(ID='Before create_huge_list()', memory=...),
- MemLog(ID='After create_huge_list()', memory=...)]
-
-```
-
-And here's the `.map()` method in action. Like the `.filter()` method, it returns a list:
-
-```python-repl
->>> as_MB = MEMLOGS.map(lambda m: m.memory / 1024 / 1024)
->>> all(m < 500 for m in as_MB)
-True
->>> MEMLOGS.map(lambda m: m.ID.lower())
-['memtrace import', 'none', 'the second mempoint', 'none-2', 'after adding a list with 10 mln elements', 'after removing this list', 'just checking', 'before create_huge_list()', 'after create_huge_list()', 'none-3']
->>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
->>> memlogs[:2]
-[('memtrace import', ...), ('none', ...)]
-
-```
-
 ## `MEMORY()`: Printing current memory usage without creating a memory point
 
 Above, we've seen the most common use of `memtrace`'s full-memory tracer. There's one additional function, `MEMORY()`, which returns the current full memory of the session:
@@ -246,6 +244,20 @@ The function does not create a memory point, so it does not log the memory usage
 ## Why the `builtins` global scope?
 
 Since this feature of `memtrace` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
+
+## Unit testing
+
+The package is covered with documentation tests and unit tests, located in this README and in the main module, [memtrace.py](memtrace.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only two commands:
+
+```bash
+(venv-memtrace) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
+(venv-memtrace) $ python memtrace/memtrace.py
+
+```
+
+Remember to run the script or these two commands in the virtual environment, here called `venv-memtrace`. In Windows, the commands would be exactly the same, so you can simply copy theme and paste into your shell.
+
+For the moment, `doctest` is the only testing framework used in `memtrace`, but if it occurrs to be insufficient, `pytest`would be implemented.
 
 ## Operating systems
 
