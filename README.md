@@ -1,4 +1,4 @@
-# o `memtrace`: Memory tracker for Python sessions
+# `memtrace`: Memory tracker for Python sessions
 
 `memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
 
