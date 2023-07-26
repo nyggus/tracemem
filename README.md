@@ -1,4 +1,4 @@
-# `memtrace`: Memory tracker for Python sessions
+# o `memtrace`: Memory tracker for Python sessions
 
 `memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
 
@@ -251,7 +251,7 @@ The package is covered with documentation tests and unit tests, located in this 
 
 ```bash
 (venv-memtrace) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
-(venv-memtrace) $ python memtrace.py
+(venv-memtrace) $ python memtrace/memtrace.py
 
 ```
 
