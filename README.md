@@ -1,8 +1,8 @@
-# `memtrace`: Memory tracker for Python sessions
+# e `tracemem`: Memory tracker for Python sessions
 
-`memtrace` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `memtrace` lets you track full memory used by a Python session.
+`tracemem` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `tracemem` lets you track full memory used by a Python session.
 
-`memtrace` is a very lightweight package for profiling memory use. It's a very simple wrapper around `pympler.asizeof.asizeof()`. `memtrace`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
+`tracemem` is a very lightweight package for profiling memory use. It's a very simple wrapper around `pympler.asizeof.asizeof()`. `tracemem`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
 
 * [`pympler`](https://pypi.org/project/Pympler/)
 * [`memory_profiler`](https://pypi.org/project/memory-profiler/)
@@ -12,23 +12,23 @@ and others.
 
 ## Usage
 
-Since this is a profiling tool, `memtrace` code is typically *not* used by applications; instead, it's added only for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `memtrace `in any of the modules of your application; after this import, all `memtrace` functions and objects are available inside the Python session, hence, in any module of your application.
+Since this is a profiling tool, `tracemem` code is typically *not* used by applications; instead, it's added only for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `tracemem `in any of the modules of your application; after this import, all `tracemem` functions and objects are available inside the Python session, hence, in any module of your application.
 
-Here's a list of all `memtrace` functions:
+Here's a list of all `tracemem` functions:
 
 * `MEMPOINT()`, which creates a memory point in your session (see below)
 * `MEMORY()`, which prints the memory usage, without creating a memory point
 * `MEMPRINT()`, which prints `MEMLOGS` (see below)
-* `MEMTRACE()`, a decorator function that creates a memory point before and after calling the decorated method
+* `tracemem()`, a decorator function that creates a memory point before and after calling the decorated method
 
-In addition, `memtrace` offers one more object:
+In addition, `tracemem` offers one more object:
 
 * `MEMLOGS`, an object of a  `MemLogsList` class, a list-like container that keeps all memory points created during a session
 
-To use `memtrace`, you only need to import it:
+To use `tracemem`, you only need to import it:
 
 ```python-repl
->>> import memtrace
+>>> import tracemem
 
 ```
 
@@ -38,11 +38,11 @@ The main function is `MEMPOINT()`, which creates a memory point — a measuremen
 
 > **A memory point**: A measurement point of the memory used by a Python session.
 
-The first memory point is when `memtrace` is imported. We can see this by checking the `MEMLOGS` object, which can be accessed from the `builtins` global space:
+The first memory point is when `tracemem` is imported. We can see this by checking the `MEMLOGS` object, which can be accessed from the `builtins` global space:
 
 ```python-repl
 >>> MEMLOGS
-[MemLog(ID='memtrace import', memory=...)]
+[MemLog(ID='tracemem import', memory=...)]
 >>> MEMPOINT()
 >>> len(MEMLOGS)
 2
@@ -50,7 +50,7 @@ The first memory point is when `memtrace` is imported. We can see this by checki
 >>> len(MEMLOGS)
 3
 >>> MEMLOGS
-[MemLog(ID='memtrace import', memory=...),
+[MemLog(ID='tracemem import', memory=...),
  MemLog(ID='None', memory=...),
  MemLog(ID='The second MEMPOINT', memory=...)]
 
@@ -83,11 +83,11 @@ This basically means that adding so big a list to the scope makes the session us
 
 ### `MEMLOGS`: A container of memory points
 
-`MEMLOGS` is actually not a list but an object of a `memtrace.MemLogsList` class:
+`MEMLOGS` is actually not a list but an object of a `tracemem.MemLogsList` class:
 
 ```python-repl
->>> type(MEMLOGS)
-<class 'memtrace.MemLogsList'>
+>>> type(MEMLOGS).__name__
+'MemLogsList'
 
 ```
 
@@ -98,16 +98,16 @@ Note that `MEMLOGS` elements are instances of a `MemLog` named tuple (`collectio
 ```python-repl
 >>> MEMPOINT("Just checking")
 >>> m = MEMLOGS[-1]
->>> type(m)
-<class 'memtrace.MemLog'>
+>>> type(m).__name__
+'MemLog'
 >>> m.ID
 'Just checking'
 >>> m[0]
 'Just checking'
->>> type(m.memory)
-<class 'int'>
->>> type(m[1])
-<class 'int'>
+>>> type(m.memory).__name__
+'int'
+>>> type(m[1]).__name__
+'int'
 
 ```
 
@@ -124,7 +124,7 @@ Let's see how this works:
 >>> type(MEMLOGS.memories), len(MEMLOGS.memories)
 (<class 'list'>, 7)
 >>> MEMLOGS.IDs
-['memtrace import',
+['tracemem import',
  'None',
  'The second MEMPOINT',
  'None-2',
@@ -137,7 +137,7 @@ Let's see how this works:
 The `.filter()` methods accepts one argument, that is, a predicate to be used for filtering, just like you'd use with the built-in `filter()` function. For the `.filter()` method, however, you need to create a predicate working with `MemLog` elements. Unlike the built-in `filter()` function, it does not create a generator but a list. This is because `MEMLOGS` is not expected to be a large object.
 
 ```python-repl
->>> def memory_over(memlog: memtrace.MemLog) -> bool:
+>>> def memory_over(memlog: tracemem.MemLog) -> bool:
 ...     return memlog.memory > 3_750_000
 >>> MEMLOGS.filter(memory_over)
 [MemLog(ID='After adding a list with 10 mln elements', memory=...)]
@@ -164,7 +164,7 @@ And here's the `.map()` method in action. Like the `.filter()` method, it return
 >>> all(m < 500 for m in as_MB)
 True
 >>> MEMLOGS.map(lambda m: m.ID.lower())
-['memtrace import',
+['tracemem import',
  'none',
  'the second mempoint',
  'none-2',
@@ -173,7 +173,7 @@ True
  'just checking']
 >>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
 >>> memlogs[:2]
-[('memtrace import', ...), ('none', ...)]
+[('tracemem import', ...), ('none', ...)]
 
 ```
 
@@ -183,7 +183,7 @@ To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which convert
 
 ```python-repl
 >>> MEMPRINT()
- 0   ...    → memtrace import
+ 0   ...    → tracemem import
  1   ...    → None
  2   ...    → The second MEMPOINT
  3   ...    → None-2
@@ -195,7 +195,7 @@ To print `MEMLOGS`, you can use a dedicated function `MEMPRINT()`, which convert
 
 ## `@MEMTRACE`: Creating memory points by decorating a function
 
-If you want to log the full-memory usage of a particular function, you can use the `@MEMTRACE` decorator. It creates two memory points: right before and right after calling the function. Just like the other `memtrace` tools, you do not need to import the decorator:
+If you want to log the full-memory usage of a particular function, you can use the `@MEMTRACE` decorator. It creates two memory points: right before and right after calling the function. Just like the other `tracemem` tools, you do not need to import the decorator:
 
 ```python-repl
 >>> @MEMTRACE
@@ -215,7 +215,7 @@ True
 
 ## `MEMORY()`: Printing current memory usage without creating a memory point
 
-Above, we've seen the most common use of `memtrace`'s full-memory tracer. There's one additional function, `MEMORY()`, which returns the current full memory of the session:
+Above, we've seen the most common use of `tracemem`'s full-memory tracer. There's one additional function, `MEMORY()`, which returns the current full memory of the session:
 
 ```python-repl
 >>> mem = MEMORY()
@@ -243,21 +243,21 @@ The function does not create a memory point, so it does not log the memory usage
 
 ## Why the `builtins` global scope?
 
-Since this feature of `memtrace` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
+Since this feature of `tracemem` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
 
 ## Unit testing
 
-The package is covered with documentation tests and unit tests, located in this README and in the main module, [memtrace.py](memtrace.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only two commands:
+The package is covered with documentation tests and unit tests, located in this README and in the main module, [tracemem.py](tracemem.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only two commands:
 
 ```bash
-(venv-memtrace) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
-(venv-memtrace) $ python memtrace/memtrace.py
+(venv-tracemem) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
+(venv-tracemem) $ python tracemem/tracemem.py
 
 ```
 
-Remember to run the script or these two commands in the virtual environment, here called `venv-memtrace`. In Windows, the commands would be exactly the same, so you can simply copy theme and paste into your shell.
+Remember to run the script or these two commands in the virtual environment, here called `venv-tracemem`. In Windows, the commands would be exactly the same, so you can simply copy theme and paste into your shell.
 
-For the moment, `doctest` is the only testing framework used in `memtrace`, but if it occurrs to be insufficient, `pytest`would be implemented.
+For the moment, `doctest` is the only testing framework used in `tracemem`, but if it occurrs to be insufficient, `pytest`would be implemented.
 
 ## Operating systems
 
