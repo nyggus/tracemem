@@ -1,4 +1,4 @@
-"""memtrace: Trace and measure the memory a Python session takes."""
+"""tracemem: Trace and measure the memory a Python session takes."""
 import builtins
 import inspect
 import gc
@@ -25,13 +25,13 @@ class MemLogsList:
     function can change it.
     
     >>> MEMLOGS[0].ID
-    'memtrace import'
+    'tracemem import'
     >>> MEMLOGS[0] = "Wrong!"
     Traceback (most recent call last):
         ...
     IncorrectUseOfMEMLOGSError: MEMLOGS does not accept item assignment
     >>> MEMLOGS[0]
-    MemLog(ID='memtrace import', memory=...)
+    MemLog(ID='tracemem import', memory=...)
     >>> MEMLOGS[20:25]
     []
     >>> MEMLOGS.append("Wrong!")
@@ -185,7 +185,7 @@ def MEMPRINT():
     >>> MEMPOINT()
     >>> MEMPOINT("Testing point")
     >>> MEMPRINT()
-    0   ... MB     → memtrace import
+    0   ... MB     → tracemem import
     1   ... MB      → None
     2   ... MB      → Testing point
     3   ... MB      → None-2
@@ -207,7 +207,7 @@ builtins.__dict__["MEMTRACE"] = MEMTRACE
 
 
 gc.collect()
-MEMPOINT("memtrace import")
+MEMPOINT("tracemem import")
 
 
 if __name__ == "__main__":

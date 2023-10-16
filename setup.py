@@ -8,15 +8,15 @@ extras_requirements = {
 }
 
 setuptools.setup(
-    name="memtrace",
-    version="0.2.0",
+    name="tracemem",
+    version="0.3.0",
     author="nyggus",
     author_email="nyggus@gmail.com",
-    description="A lightweight tool to measure the full memory of a Python session",
+    description="A lightweight tool to measure and trace the full memory of a Python session",
     license='MIT',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/nyggus/memtrace",
+    url="https://github.com/nyggus/tracemem",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3.8",
