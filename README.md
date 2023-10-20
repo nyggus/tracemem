@@ -1,4 +1,4 @@
-# e `tracemem`: Memory tracker for Python sessions
+# `tracemem`: Memory tracker for Python sessions
 
 `tracemem` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `tracemem` lets you track full memory used by a Python session.
 
