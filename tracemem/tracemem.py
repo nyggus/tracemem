@@ -4,11 +4,10 @@ import inspect
 import gc
 import warnings
 
-from pympler.asizeof import asizeof
-
-
 from collections import namedtuple
 from functools import wraps
+
+import psutil
 
 
 MemLog = namedtuple("MemLog", "ID memory")
@@ -119,6 +118,7 @@ class MemLogsList:
 
 
 builtins.__dict__["MEMLOGS"] = MemLogsList([])
+builtins.__dict__["PROCESS"] = psutil.Process()
 
 
 def MEMPOINT(ID=None):
@@ -127,25 +127,21 @@ def MEMPOINT(ID=None):
     The function is available from any module of a session. It logs into
     MEMLOGS, also available from any module.
 
-    Memory is collected using pympler.asizeof.asizeof(), and reported in
+    Memory is collected using psutil.Process.memory_info(), and reported in
     bytes. So, the function measures the size of all current gc objects,
     including module, global and stack frame objects, minus the size
     of `MEMLOGS`.
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        MEMLOGS.append(  # type: ignore
-            MemLog(
-                str(ID), (asizeof(all=True)) # type: ignore
-            )
-        )
+        MEMLOGS.append(MemLog(str(ID), (PROCESS.memory_info().rss))) # type: ignore
 
 
 def MEMORY():
     """Global function to measure full memory.
 
     The function is available from any module of a session. It returns
-    the memory in bytes, calculated using pympler.asizeof.asizeof(). So,
+    the memory in bytes, calculated using psutil.Process.memory_info(). So,
     the function measures the size of all current gc objects, including
     module, global and stack frame objects, minus the size of `MEMLOGS`.
     
@@ -159,7 +155,7 @@ def MEMORY():
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return asizeof(all=True) # type: ignore
+        return PROCESS.memory_info().rss # type: ignore
 
 
 def MEMTRACE(func, ID_before=None, ID_after=None):
