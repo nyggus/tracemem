@@ -74,7 +74,7 @@ In addition to IDs, memory points contain their essence: the memory used by the 
 >>> MEMPOINT("After adding a list with 10 mln elements")
 >>> del li
 >>> MEMPOINT("After removing this list")
->>> MEMLOGS[-2].memory / MEMLOGS[-1].memory > 100
+>>> MEMLOGS[-2].memory > MEMLOGS[-1].memory
 True
 
 ```
@@ -138,7 +138,7 @@ The `.filter()` methods accepts one argument, that is, a predicate to be used fo
 
 ```python-repl
 >>> def memory_over(memlog: tracemem.MemLog) -> bool:
-...     return memlog.memory > 3_750_000
+...     return memlog.memory > 100 * (1024 ** 2)
 >>> MEMLOGS.filter(memory_over)
 [MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 
@@ -147,7 +147,7 @@ The `.filter()` methods accepts one argument, that is, a predicate to be used fo
 We can of course use a `lambda` function instead:
 
 ```python-repl
->>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
+>>> MEMLOGS.filter(lambda m: m.memory > 100 * (1024 ** 2))
 [MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 >>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
 []
@@ -208,7 +208,7 @@ If you want to log the full-memory usage of a particular function, you can use t
 [MemLog(ID='Before create_huge_list()', memory=...),
  MemLog(ID='After create_huge_list()', memory=...),
  MemLog(ID='None-3', memory=...)]
->>> MEMLOGS[-2].memory > 100 * MEMLOGS[-1].memory
+>>> MEMLOGS[-2].memory > MEMLOGS[-1].memory
 True
 
 ```
