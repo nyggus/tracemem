@@ -1,10 +1,13 @@
 # `tracemem`: Memory tracker for Python sessions
 
-`tracemem` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `tracemem` lets you track full memory used by a Python session.
+`tracemem` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `tracemem` lets you track session memory used by a Python session.
 
-`tracemem` is a very lightweight package for profiling memory use. It's a very simple wrapper around `pympler.asizeof.asizeof()`. `tracemem`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
+`tracemem` is a very lightweight package for profiling memory use. It's a very simple wrapper around `psutil.Process.memory_info()`. To measure the memory used by the session, `tracemem` uses the `psutil.Process.memory_info.rss` (Resident Set Size) object, which is the actual physical memory (RAM) used by the process, representing the real memory footprint of the Python session.
+
+`tracemem`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
 
 * [`pympler`](https://pypi.org/project/Pympler/)
+* [`psutil`](https://pypi.org/project/psutil/)
 * [`memory_profiler`](https://pypi.org/project/memory-profiler/)
 * [`perftester`](https://pypi.org/project/perftester/)
 
@@ -12,7 +15,7 @@ and others.
 
 ## Usage
 
-Since this is a profiling tool, `tracemem` code is typically *not* used by applications; instead, it's added only for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `tracemem `in any of the modules of your application; after this import, all `tracemem` functions and objects are available inside the Python session, hence, in any module of your application.
+Since this is a profiling tool, `tracemem` code can be by is seldom used by applications; typically, it's used for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `tracemem `in any of the modules of your application; after this import, all `tracemem` functions and objects are available inside the Python session, hence, in any module of your application.
 
 Here's a list of all `tracemem` functions:
 
@@ -74,7 +77,7 @@ In addition to IDs, memory points contain their essence: the memory used by the 
 >>> MEMPOINT("After adding a list with 10 mln elements")
 >>> del li
 >>> MEMPOINT("After removing this list")
->>> MEMLOGS[-2].memory / MEMLOGS[-1].memory > 100
+>>> MEMLOGS[-2].memory > MEMLOGS[-1].memory
 True
 
 ```
@@ -138,7 +141,7 @@ The `.filter()` methods accepts one argument, that is, a predicate to be used fo
 
 ```python-repl
 >>> def memory_over(memlog: tracemem.MemLog) -> bool:
-...     return memlog.memory > 3_750_000
+...     return memlog.memory > 100 * (1024 ** 2)
 >>> MEMLOGS.filter(memory_over)
 [MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 
@@ -147,7 +150,7 @@ The `.filter()` methods accepts one argument, that is, a predicate to be used fo
 We can of course use a `lambda` function instead:
 
 ```python-repl
->>> MEMLOGS.filter(lambda m: m.memory > 3_750_000)
+>>> MEMLOGS.filter(lambda m: m.memory > 100 * (1024 ** 2))
 [MemLog(ID='After adding a list with 10 mln elements', memory=...)]
 >>> MEMLOGS.filter(lambda m: m.memory < 1_000_000)
 []
@@ -208,7 +211,7 @@ If you want to log the full-memory usage of a particular function, you can use t
 [MemLog(ID='Before create_huge_list()', memory=...),
  MemLog(ID='After create_huge_list()', memory=...),
  MemLog(ID='None-3', memory=...)]
->>> MEMLOGS[-2].memory > 100 * MEMLOGS[-1].memory
+>>> MEMLOGS[-2].memory > MEMLOGS[-1].memory
 True
 
 ```
@@ -245,9 +248,24 @@ The function does not create a memory point, so it does not log the memory usage
 
 Since this feature of `tracemem` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.
 
+### Linters
+
+Since `tracemem` works in the global scope, linters will scream at you. If this bothers you, you can add `# type: ignore` in the line where you use a `tracemem`'s command, like here:
+
+```python
+import tracemem
+
+# the code...
+
+MEMORY() # type: ignore
+
+# the code...
+
+```
+
 ## Unit testing
 
-The package is covered with documentation tests and unit tests, located in this README and in the main module, [tracemem.py](tracemem.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`. To run the tests under Linux, it's enough to use the `run_tests.sh` shell script, which contains only two commands:
+The package is covered with documentation tests and unit tests, located in this README and in the main module, [tracemem.py](tracemem.py). To run them, you need to use three `doctest` flags: `doctest.ELLIPSIS`, `doctest.NORMALIZE_WHITESPACE` and `doctest.IGNORE_EXCEPTION_DETAIL`:
 
 ```bash
 (venv-tracemem) $ python -m doctest README.md -o ELLIPSIS -o NORMALIZE_WHITESPACE -o IGNORE_EXCEPTION_DETAIL
@@ -255,13 +273,13 @@ The package is covered with documentation tests and unit tests, located in this 
 
 ```
 
-Remember to run the script or these two commands in the virtual environment, here called `venv-tracemem`. In Windows, the commands would be exactly the same, so you can simply copy theme and paste into your shell.
+Remember to run the commands in the virtual environment, here called `venv-tracemem`.
 
 For the moment, `doctest` is the only testing framework used in `tracemem`, but if it occurrs to be insufficient, `pytest`would be implemented.
 
 ## Operating systems
 
-The package is developed in Linux (actually, under WSL) and checked in Windows 10, so it works in both these environments.
+The package is developed in Linux (actually, under WSL) and checked in Windows 11, so it works in both these environments.
 
 ## Contribution
 
