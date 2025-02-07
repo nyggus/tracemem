@@ -2,9 +2,12 @@
 
 `tracemem` enables you to check the full memory used by a Python session. It also offers simple tools to keep the memory used by the session in subsequent moments, which is why we can say `tracemem` lets you track full memory used by a Python session.
 
-`tracemem` is a very lightweight package for profiling memory use. It's a very simple wrapper around `pympler.asizeof.asizeof()`. `tracemem`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
+`tracemem` is a very lightweight package for profiling memory use. It's a very simple wrapper around `psutil.Process.memory_info()`. To measure the memory used by the session, `tracemem` uses the `rss` (Resident Set Size) object, which is the actual physical memory (RAM) used by the process, representing the real memory footprint of the Python session.
+
+`tracemem`'s only purpose is to measure memory usage by a Python session, so you cannot, for instance, measure a memory used by a particular function or object. For this, you can use other tools, such as
 
 * [`pympler`](https://pypi.org/project/Pympler/)
+* [`psutil`](https://pypi.org/project/psutil/)
 * [`memory_profiler`](https://pypi.org/project/memory-profiler/)
 * [`perftester`](https://pypi.org/project/perftester/)
 
