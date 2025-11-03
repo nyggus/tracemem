@@ -9,7 +9,7 @@ from functools import wraps
 from typing import Callable, Optional
 
 import psutil
-
+from rounder import signif
 
 MemLog = namedtuple("MemLog", "ID memory")
 
@@ -224,6 +224,10 @@ def MB(
     24.8
     >>> MB(memory, round, 2)
     24.84
+    >>> MB(memory, signif, 2)
+    25.0
+    >>> MB(memory, signif, 4)
+    24.84  
     """
     memory = memory / 1024 / 1024
     if not round_func:

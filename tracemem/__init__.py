@@ -7,6 +7,7 @@ from tracemem.tracemem import (
     MEMPOINT,
     MEMPRINT,
     MEMTRACE,
+    signif,
     IncorrectUseOfMEMLOGSError,
 )
 

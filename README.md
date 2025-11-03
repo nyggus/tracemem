@@ -258,6 +258,56 @@ The function does not create a memory point, so it does not log the memory usage
 
 ```
 
+## `MB()`: Calculate MB from B
+
+`psutil` works with memory in bytes. You can use the `MB()` function to convert it to megabytes:
+
+```python-repl
+>>> memory = 19853463
+>>> tracemem.MB(memory)
+18.933737754821777
+
+```
+
+As you see, MB are not rounded, but you can do it by providing a rounding function as `MB`'s argument:
+
+```python-repl
+>>> memory = 19853463
+>>> tracemem.MB(memory, round)
+19
+>>> tracemem.MB(memory, round, ndigits=2) # ndigits is the argument of round()
+18.93
+>>> tracemem.MB(memory, round, 3) # ndigits is the argument of round()
+18.934
+
+```
+
+`tracemem` uses [`rounder`](https://github.com/nyggus/rounder), which enables you to round complex Python objects with just one operation. Its `signif()` function, which rounds a number to significant digits, is imported along with `tracemem`:
+
+```python-repl
+>>> memory = 19853463
+>>> tracemem.MB(memory, tracemem.signif, 3)
+18.9
+>>> tracemem.MB(memory, tracemem.signif, 5)
+18.934
+
+```
+
+Since `rounder` will be installed in your virtual environment along with `tracemem`, you can import its functions directly from it:
+
+```python-repl
+>>> memory = 19853463
+>>> import rounder
+>>> tracemem.MB(memory, rounder.signif, 3)
+18.9
+>>> tracemem.MB(memory, rounder.signif, 5)
+18.934
+
+```
+
+Look up [`rounder`](https://github.com/nyggus/rounder) for its other rounding functions.
+
+
 ## Why the `builtins` global scope?
 
 Since this feature of `tracemem` is to be used to debug memory use from various modules, it'd be inconvinient to import the required objects in all these modules. That's why the required objects are kept in the global scope — but this can change in future versions.

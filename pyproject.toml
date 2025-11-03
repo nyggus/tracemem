@@ -12,7 +12,7 @@ description = "A lightweight tool to measure and trace the full memory of a Pyth
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
-dependencies = ["psutil"]
+dependencies = ["psutil", "rounder"]
 classifiers = [
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
