@@ -201,7 +201,7 @@ def MEMPRINT():
         ID = memlog.ID if memlog.ID else ""
         print(
             f"{i: < 4} "
-            f"{str(round(memlog.memory / 1024/1024, 2)) + ' MB': <11} → "
+            f"{str(MB(memlog.memory, round, 2)) + ' MB': <11} → "
             f"{ID}"
         )
 
