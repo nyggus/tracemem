@@ -10,8 +10,8 @@ authors = [
 ]
 description = "A lightweight tool to measure and trace the full memory of a Python session"
 readme = "README.md"
-license = "MIT"  # ✅ simple SPDX string form
-license-files = ["LICENSE"]  # ✅ optional but recommended
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 dependencies = ["psutil", "rounder"]
 classifiers = [
