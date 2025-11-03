@@ -17,6 +17,8 @@ and others.
 
 Since this is a profiling tool, `tracemem` code can be by is seldom used by applications; typically, it's used for profiling purposes. Hence, to make using the tool easier, it's objects are available as `builtins` global variables, that is, as variables obtained from any module used in the session. Hence, you do not have to import them in every module in which you're using the tools. So, to use this functionality, it's enough to import `tracemem `in any of the modules of your application; after this import, all `tracemem` functions and objects are available inside the Python session, hence, in any module of your application.
 
+Nevertheless, `tracemem` also offers the traditional structure of a Python packages's API. Thus, after importing `tracemem`, you can use its functions as, for example, `tracemem.MEMPRINT()` — but only in the very module/script in which you imported it. If you want to use `tracemem` as the global module, you need to do it as it's described above. Hereafter, we will use `tracemem` as a global module, but — just in case — do remember about the traditional API the package offers.
+
 Here's a list of all `tracemem` functions:
 
 * `MEMPOINT()`, which creates a memory point in your session (see below)
@@ -84,6 +86,16 @@ True
 
 This basically means that adding so big a list to the scope makes the session use over a hundred times more memory.
 
+#### Returning memory from `MEMPOINT()`
+
+If you wish, you can make the `MEMPOINT()` function both log memory and return it — enough to set a (required) keyword argument `return_memory` to `True`. Note, however, that it returns it in bytes:
+
+```python-repl
+>>> MEMPOINT("With a return value", return_memory=True)
+2...
+
+```
+
 ### `MEMLOGS`: A container of memory points
 
 `MEMLOGS` is actually not a list but an object of a `tracemem.MemLogsList` class:
@@ -125,7 +137,7 @@ Let's see how this works:
 
 ```python-repl
 >>> type(MEMLOGS.memories), len(MEMLOGS.memories)
-(<class 'list'>, 7)
+(<class 'list'>, 8)
 >>> MEMLOGS.IDs
 ['tracemem import',
  'None',
@@ -133,6 +145,7 @@ Let's see how this works:
  'None-2',
  'After adding a list with 10 mln elements',
  'After removing this list',
+ 'With a return value',
  'Just checking']
 
 ```
@@ -173,6 +186,7 @@ True
  'none-2',
  'after adding a list with 10 mln elements',
  'after removing this list',
+ 'with a return value',
  'just checking']
 >>> memlogs = MEMLOGS.map(lambda m: (m.ID.lower(), round(m.memory / 1024 / 1024)))
 >>> memlogs[:2]
@@ -231,16 +245,16 @@ The function does not create a memory point, so it does not log the memory usage
 
 ```python-repl
 >>> len(MEMLOGS)
-10
+11
 >>> _ = MEMORY()
 >>> len(MEMLOGS)
-10
+11
 >>> MEMPOINT("Just once more")
 >>> len(MEMLOGS)
-11
+12
 >>> _ = MEMORY()
 >>> len(MEMLOGS)
-11
+12
 
 ```
 

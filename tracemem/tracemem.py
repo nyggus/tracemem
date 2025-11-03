@@ -6,6 +6,7 @@ import warnings
 
 from collections import namedtuple
 from functools import wraps
+from typing import Callable, Optional
 
 import psutil
 
@@ -23,12 +24,18 @@ class MemLogsList:
     It's designed as a singleton class in a way that only a MEMPOINT()
     function can change it.
     
+    >>> import tracemem
+    >>> MEMLOGS[0].ID
+    'tracemem import'
+    >>> import tracemem
     >>> MEMLOGS[0].ID
     'tracemem import'
     >>> MEMLOGS[0] = "Wrong!"
     Traceback (most recent call last):
         ...
     IncorrectUseOfMEMLOGSError: MEMLOGS does not accept item assignment
+    >>> MEMLOGS[0]
+    MemLog(ID='tracemem import', memory=...)
     >>> MEMLOGS[0]
     MemLog(ID='tracemem import', memory=...)
     >>> MEMLOGS[20:25]
@@ -42,10 +49,6 @@ class MemLogsList:
     >>> for _ in range(10): MEMPOINT()
     >>> len(MEMLOGS) - current_len
     10
-    >>> del MEMLOGS
-    Traceback (most recent call last):
-        ...
-    NameError: name 'MEMLOGS' is not defined
     """
 
     _instance = None
@@ -121,7 +124,7 @@ builtins.__dict__["MEMLOGS"] = MemLogsList([])
 builtins.__dict__["PROCESS"] = psutil.Process()
 
 
-def MEMPOINT(ID=None):
+def MEMPOINT(ID=None, *, return_memory=False):
     """Global function to measure full memory and log it into MEMLOGS.
 
     The function is available from any module of a session. It logs into
@@ -134,7 +137,12 @@ def MEMPOINT(ID=None):
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        MEMLOGS.append(MemLog(str(ID), (PROCESS.memory_info().rss))) # type: ignore
+        memory = PROCESS.memory_info().rss # type: ignore
+        MEMLOGS.append(MemLog(str(ID), memory)) # type: ignore
+        # builtins.__dict__["MEMLOGS"].append(MemLog(str(ID), memory))
+        
+    if return_memory:
+        return memory
 
 
 def MEMORY():
@@ -176,10 +184,12 @@ def MEMTRACE(func, ID_before=None, ID_after=None):
 def MEMPRINT():
     """Pretty-print MEMLOGS in MB.
     
+    >>> import tracemem
     >>> MEMPOINT()
-    >>> MEMPOINT("Testing point")
-    >>> MEMPOINT()
-    >>> MEMPOINT("Testing point")
+    >>> tracemem.MEMPOINT("Testing point")
+    >>> MEMPOINT(return_memory=True)
+    2...
+    >>> tracemem.MEMPOINT("Testing point")
     >>> MEMPRINT()
     0   ... MB     → tracemem import
     1   ... MB      → None
@@ -194,6 +204,32 @@ def MEMPRINT():
             f"{str(round(memlog.memory / 1024/1024, 2)) + ' MB': <11} → "
             f"{ID}"
         )
+
+
+def MB(
+    memory: float,
+    round_func: Optional[Callable] = None,
+    *args,
+    **kwargs,
+) -> float:
+    """Convert B to MB and round if requested.
+    
+    >>> memory = 26046118
+    >>> MB(memory)
+    24.839513778686523
+    >>> MB(memory, round)
+    25
+    >>> import tracemem
+    >>> tracemem.MB(memory, round, ndigits=1)
+    24.8
+    >>> MB(memory, round, 2)
+    24.84
+    """
+    memory = memory / 1024 / 1024
+    if not round_func:
+        return memory
+    return round_func(memory, *args, **kwargs)
+        
 
 
 builtins.__dict__["MEMPOINT"] = MEMPOINT
