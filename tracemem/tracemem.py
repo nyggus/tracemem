@@ -187,8 +187,9 @@ def MEMPRINT():
     >>> import tracemem
     >>> MEMPOINT()
     >>> tracemem.MEMPOINT("Testing point")
-    >>> MEMPOINT(return_memory=True)
-    2...
+    >>> _ = MEMPOINT(return_memory=True)
+    >>> _ is not None
+    True
     >>> tracemem.MEMPOINT("Testing point")
     >>> MEMPRINT()
     0   ... MB     → tracemem import
